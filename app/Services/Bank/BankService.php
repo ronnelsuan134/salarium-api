@@ -31,14 +31,17 @@ class BankService
 
             $recipientAccount = User::with('account')->whereEmail($payload['email'])->first();
 
+            if (Auth::user()->email == $payload['email']) {
+                return $this->responseError(error: ['email' => ['The sender and recipient account numbers cannot be the same.']], status: Response::HTTP_BAD_REQUEST, message: 'Bad Request');
+            }
             if (!$recipientAccount) {
-                return $this->responseError(error: 'Bad Request', status: Response::HTTP_BAD_REQUEST, message: 'Invalid Email Address');
+                return $this->responseError(error: ['email' => ['Invalid Email Address']], status: Response::HTTP_BAD_REQUEST, message: 'Bad Request');
             }
             if (
                 $payload['amount'] == 0 ||
                 (float)$payload['amount'] > (float) $senderAccount->balance
             ) {
-                return $this->responseError(error: 'Bad Request', status: Response::HTTP_BAD_REQUEST, message: 'Insufficient Funds');
+                return $this->responseError(error: ['amount' => ['Insufficient Funds']], status: Response::HTTP_BAD_REQUEST, message: 'Bad Request');
             }
 
             DB::beginTransaction();
@@ -105,8 +108,6 @@ class BankService
     {
         return $this->responseSuccess(data: Account::whereUserId(Auth::user()->id)->firstOrFail());
     }
-
-
 
     private function sender($senderAccount, $amount): void
     {
